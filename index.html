@@ -1,4 +1,10 @@
-
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд задач IT-директора</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -6,18 +12,676 @@
     <style>
         :root {
             --bg: #eef3f8;
+            --bg-accent: #dbe7f6;
+            --panel: rgba(255, 255, 255, 0.92);
+            --panel-strong: #ffffff;
+            --line: rgba(137, 162, 199, 0.18);
+            --text: #1e2b3c;
+            --muted: #6d7d93;
+            --blue: #4e79e8;
+            --blue-soft: rgba(78, 121, 232, 0.12);
+            --green: #35b88f;
+            --green-soft: rgba(53, 184, 143, 0.12);
+            --amber: #f4a942;
+            --amber-soft: rgba(244, 169, 66, 0.14);
+            --red: #ea5b52;
+            --red-soft: rgba(234, 91, 82, 0.12);
+            --slate: #9bacc1;
+            --shadow: 0 22px 45px rgba(103, 126, 160, 0.14);
+            --radius: 24px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(78, 121, 232, 0.14), transparent 28%),
+                radial-gradient(circle at top right, rgba(53, 184, 143, 0.12), transparent 24%),
+                linear-gradient(180deg, #f6f9fc 0%, var(--bg) 100%);
+            color: var(--text);
+            font-family: "IBM Plex Sans", sans-serif;
+        }
+
+        .dashboard {
+            width: min(1420px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 28px 0 40px;
+        }
+
+        .hero {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .hero-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .eyebrow {
+            color: var(--blue);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: clamp(30px, 4vw, 42px);
+            line-height: 1.02;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .hero-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(130, 155, 193, 0.16);
+            backdrop-filter: blur(16px);
+        }
+
+        .refresh-button {
+            appearance: none;
+            border: 0;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--blue) 0%, #6b9cff 100%);
+            color: #fff;
+            padding: 14px 18px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 18px 32px rgba(78, 121, 232, 0.28);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .refresh-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 20px 36px rgba(78, 121, 232, 0.34);
+        }
+
+        .kpi-grid,
+        .overview-grid,
+        .chart-grid {
+            display: grid;
+            gap: 18px;
+        }
+
+        .kpi-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-bottom: 18px;
+        }
+
+        .overview-grid {
+            grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+            margin-bottom: 18px;
+        }
+
+        .chart-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-bottom: 18px;
+        }
+
+        .panel {
+            position: relative;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0));
+        }
+
+        .panel-body {
+            position: relative;
+            z-index: 1;
+            padding: 22px;
+        }
+
+        .kpi-card {
+            min-height: 146px;
+            overflow: hidden;
+        }
+
+        .kpi-card .panel-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .kpi-topline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .kpi-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .kpi-value {
+            font-family: "Space Grotesk", sans-serif;
+            font-size: clamp(34px, 4vw, 56px);
+            line-height: 1;
+            letter-spacing: -0.05em;
+        }
+
+        .kpi-note {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .panel-title h2,
+        .panel-title h3 {
+            margin: 0;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 20px;
+            line-height: 1.05;
+        }
+
+        .panel-title p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .legend-pill {
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .legend-pill.blue {
+            color: var(--blue);
+            background: var(--blue-soft);
+        }
+
+        .legend-pill.green {
+            color: var(--green);
+            background: var(--green-soft);
+        }
+
+        .legend-pill.red {
+            color: var(--red);
+            background: var(--red-soft);
+        }
+
+        .legend-pill.amber {
+            color: #c58219;
+            background: var(--amber-soft);
+        }
+
+        .attention-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .attention-item {
+            position: relative;
+            overflow: hidden;
+            padding: 18px 18px 18px 20px;
+            border-radius: 20px;
+            background: var(--panel-strong);
+            border: 1px solid rgba(130, 155, 193, 0.14);
+            box-shadow: 0 10px 28px rgba(120, 140, 170, 0.1);
+        }
+
+        .attention-item::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 12px;
+            bottom: 12px;
+            width: 4px;
+            border-radius: 999px;
+            background: var(--accent);
+        }
+
+        .attention-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 10px;
+        }
+
+        .attention-title {
+            margin: 0;
+            font-size: 17px;
+            line-height: 1.25;
+        }
+
+        .badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge.status-pause {
+            color: var(--blue);
+            background: var(--blue-soft);
+        }
+
+        .badge.status-work {
+            color: var(--green);
+            background: var(--green-soft);
+        }
+
+        .badge.status-test {
+            color: var(--red);
+            background: var(--red-soft);
+        }
+
+        .badge.status-done {
+            color: #a36c12;
+            background: var(--amber-soft);
+        }
+
+        .badge.priority-critical {
+            color: #c3352d;
+            background: rgba(234, 91, 82, 0.18);
+        }
+
+        .badge.priority-high {
+            color: var(--blue);
+            background: rgba(78, 121, 232, 0.14);
+        }
+
+        .badge.priority-medium {
+            color: #b97511;
+            background: rgba(244, 169, 66, 0.18);
+        }
+
+        .badge.priority-low {
+            color: #62758c;
+            background: rgba(155, 172, 193, 0.18);
+        }
+
+        .attention-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .attention-meta strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .chart-frame {
+            position: relative;
+            min-height: 320px;
+        }
+
+        .chart-frame.tall {
+            min-height: 360px;
+        }
+
+        .table-panel .panel-body {
+            padding-top: 18px;
+        }
+
+        .table-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .filter-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .filter-button {
+            appearance: none;
+            border: 1px solid rgba(130, 155, 193, 0.16);
+            background: rgba(255, 255, 255, 0.86);
+            color: var(--muted);
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-button.active {
+            color: var(--blue);
+            border-color: rgba(78, 121, 232, 0.22);
+            background: rgba(78, 121, 232, 0.1);
+            box-shadow: inset 0 0 0 1px rgba(78, 121, 232, 0.08);
+        }
+
+        .search-input {
+            width: min(320px, 100%);
+            border: 1px solid rgba(130, 155, 193, 0.16);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.86);
+            padding: 12px 14px;
+            color: var(--text);
+            font: inherit;
+            outline: none;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 20px;
+            border: 1px solid rgba(130, 155, 193, 0.12);
+            background: rgba(255, 255, 255, 0.76);
+        }
+
+        table {
+            width: 100%;
+            min-width: 980px;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: rgba(245, 248, 252, 0.98);
+            padding: 14px 16px;
+            text-align: left;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        tbody td {
+            padding: 14px 16px;
+            border-top: 1px solid rgba(130, 155, 193, 0.1);
+            vertical-align: top;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: rgba(78, 121, 232, 0.04);
+        }
+
+        .task-title {
+            margin: 0 0 8px;
+            font-weight: 600;
+            line-height: 1.35;
+        }
+
+        .task-subline {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .cell-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .soft-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: rgba(130, 155, 193, 0.12);
+            color: #50627a;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .center-state {
+            display: grid;
+            place-items: center;
+            min-height: 240px;
+            color: var(--muted);
+            text-align: center;
+            padding: 24px;
+        }
+
+        .loading {
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.48; }
+            50% { opacity: 1; }
+        }
+
+        @media (max-width: 1120px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .overview-grid,
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .dashboard {
+                width: min(100% - 20px, 100%);
+                padding-top: 20px;
+            }
+
+            .hero,
+            .table-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel-body {
+                padding: 18px;
+            }
+
+            .attention-head {
+                flex-direction: column;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="dashboard">
+        <section class="hero">
+            <div class="hero-copy">
                 <div class="eyebrow">Executive IT View</div>
                 <h1>Дашборд задач IT-директора</h1>
                 <div class="hero-meta">
-                    <span>Источник: локальный экспорт задач</span>
                     <span>Источник: <strong id="source-label">Google Sheets</strong></span>
                     <span>Обновлено: <strong id="last-update">загрузка...</strong></span>
                     <span>Ответственных: <strong id="responsible-count">-</strong></span>
                 </div>
+            </div>
+            <button class="refresh-button" type="button" id="refresh-button">Обновить данные</button>
+        </section>
+
+        <section class="kpi-grid" id="kpi-grid"></section>
+
+        <section class="overview-grid">
+            <article class="panel">
+                <div class="panel-body">
+                    <div class="panel-title">
+                        <div>
+                            <h2>Требуют внимания</h2>
+                            <p>Задачи с самой свежей активностью, высоким риском и признаками инцидентности.</p>
+                        </div>
+                        <span class="legend-pill red" id="attention-count">0 задач</span>
+                    </div>
+                    <div class="attention-list" id="attention-list">
+                        <div class="center-state loading">Собираю карточки приоритетных задач...</div>
+                    </div>
+                </div>
+            </article>
+
+            <article class="panel">
+                <div class="panel-body">
+                    <div class="panel-title">
+                        <div>
+                            <h2>Нагрузка по ответственным</h2>
+                            <p>Показываем верхних исполнителей по активному портфелю задач.</p>
+                        </div>
+                        <span class="legend-pill blue" id="active-count">0 активных</span>
+                    </div>
+                    <div class="chart-frame" id="responsible-chart-frame">
+                        <canvas id="responsible-chart"></canvas>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section class="chart-grid">
+            <article class="panel">
+                <div class="panel-body">
+                    <div class="panel-title">
+                        <div>
+                            <h3>По статусу</h3>
+                            <p>Быстрая картина по состоянию текущего бэклога.</p>
+                        </div>
+                        <span class="legend-pill green">Статусы</span>
+                    </div>
+                    <div class="chart-frame tall">
+                        <canvas id="status-chart"></canvas>
+                    </div>
+                </div>
+            </article>
+
+            <article class="panel">
+                <div class="panel-body">
+                    <div class="panel-title">
+                        <div>
+                            <h3>По приоритету</h3>
+                            <p>Приоритет рассчитан по тегам, формулировкам и свежести активности.</p>
+                        </div>
+                        <span class="legend-pill amber">Риски</span>
+                    </div>
+                    <div class="chart-frame tall">
+                        <canvas id="priority-chart"></canvas>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section class="panel table-panel">
+            <div class="panel-body">
+                <div class="panel-title">
+                    <div>
+                        <h2>Все задачи</h2>
+                        <p>Полный список с фильтрацией по статусам и быстрым поиском.</p>
+                    </div>
+                    <span class="legend-pill blue" id="table-count">0 строк</span>
+                </div>
+
+                <div class="table-toolbar">
+                    <div class="filter-pills" id="filter-pills"></div>
+                    <input class="search-input" id="search-input" type="search" placeholder="Поиск по задаче, проекту, исполнителю или тегам">
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Задача</th>
+                                <th>Тип</th>
+                                <th>Ответственный</th>
+                                <th>Статус</th>
+                                <th>Приоритет</th>
+                                <th>Инфраструктура</th>
+                                <th>Последняя активность</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr>
+                                <td colspan="7">
+                                    <div class="center-state loading">Загружаю источник и строю таблицу...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
     </main>
 
     <script>
-        const DATA_SOURCE = "./tasks_2026-04-20_17_26_02.xls";
         const DATA_SOURCES = {
             primaryCsv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkWl7Whkp0ae00GwDZDkABz6HYDvgwen0zmFa7814DHlvJppZHWv8Jya586vhp1UWXfBgPfWDD2zun/pub?gid=0&single=true&output=csv",
             fallbackHtml: "./tasks_2026-04-20_17_26_02.xls"
@@ -25,25 +689,180 @@
         const STATUS_ORDER = ["Все", "Пауза", "В работе", "Тестирование", "Выполнено"];
         const STATUS_COLORS = {
             "Пауза": "#4e79e8",
+            "В работе": "#35b88f",
+            "Тестирование": "#ea5b52",
+            "Выполнено": "#f4a942"
+        };
+        const PRIORITY_ORDER = ["Средний", "Высокий", "Низкий", "Критично"];
+        const PRIORITY_COLORS = {
+            "Средний": "#f4a942",
+            "Высокий": "#4e79e8",
+            "Низкий": "#9bacc1",
+            "Критично": "#ea5b52"
+        };
+
+        const state = {
+            tasks: [],
+            filteredTasks: [],
+            currentFilter: "Все",
+            search: "",
+            charts: {}
+        };
+
+        function escapeHtml(value = "") {
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function splitTags(raw = "") {
+            return String(raw)
+                .split(",")
+                .map((tag) => tag.trim())
+                .filter(Boolean);
+        }
+
+        function formatDate(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+                return "Без даты";
+            }
+
+            return new Intl.DateTimeFormat("ru-RU", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            }).format(date);
+        }
+
+        function parseDate(value = "") {
+            const match = String(value).trim().match(/^(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+            if (!match) {
+                return null;
+            }
+
+            const [, day, month, year, hours = "00", minutes = "00", seconds = "00"] = match;
+            return new Date(Number(year), Number(month) - 1, Number(day), Number(hours), Number(minutes), Number(seconds));
+        }
+
+        function normalizeProject(project = "") {
+            return String(project).replace(/^Проекты\s+/i, "").trim() || "Без проекта";
+        }
+
+        function determineStatus(tags = []) {
+            const joined = tags.join(" ").toLowerCase();
+            if (joined.includes("готово")) return "Выполнено";
+            if (joined.includes("тест")) return "Тестирование";
+            if (joined.includes("в работе")) return "В работе";
+            return "Пауза";
+        }
+
+        function deriveType(tags, project) {
+            const cleanTags = tags.filter((tag) => {
+                const normalized = tag.toLowerCase();
+                return !normalized.includes("готово") && !normalized.includes("тест") && !normalized.includes("в работе");
+            });
+
+            return cleanTags[0] || normalizeProject(project);
+        }
+
+        function deriveInfrastructure(tags, project) {
+            const cleanTags = tags.filter((tag) => {
+                const normalized = tag.toLowerCase();
+                return !normalized.includes("готово") && !normalized.includes("тест") && !normalized.includes("в работе");
+            });
+
+            if (cleanTags.length >= 2) {
+                return cleanTags.slice(0, 2);
+            }
+
+            if (cleanTags.length === 1) {
+                return [cleanTags[0], normalizeProject(project)];
+            }
+
+            return [normalizeProject(project)];
+        }
+
+        function buildPriority(task, latestActivity) {
+            const text = [task.title, task.project, ...task.tags].join(" ").toLowerCase();
+            const infraBoostTags = ["сл", "касса", "ах", "срм", "тмс", "дэшборды", "фиды для мп", "сайт"];
+            const criticalTokens = ["баг", "ошиб", "прод", "крит", "не работает", "проблем", "нулевыми остатками", "backup", "бэкап", "redis", "proxy", "прокси"];
+            const businessTokens = ["озон", "каспи", "чек", "доставка", "заказ", "курьер", "робот"];
+
+            let score = 0;
+
+            if (task.lastActivity && latestActivity) {
+                const diffMs = latestActivity.getTime() - task.lastActivity.getTime();
+                const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                if (diffDays <= 1.2) score += 3;
+                else if (diffDays <= 4) score += 2;
+                else if (diffDays <= 10) score += 1;
+            }
+
+            if (criticalTokens.some((token) => text.includes(token))) {
+                score += 2;
+            }
+
+            if (businessTokens.some((token) => text.includes(token))) {
+                score += 1;
+            }
+
+            if (task.tags.some((tag) => infraBoostTags.includes(tag.toLowerCase()))) {
+                score += 1;
+            }
+
+            if (task.status === "В работе" || task.status === "Тестирование") {
+                score += 1;
+            }
+
+            if (task.status === "Выполнено") {
+                score = Math.max(0, score - 2);
+            }
+
+            if (score >= 6) return { label: "Критично", score };
+            if (score >= 4) return { label: "Высокий", score };
+            if (score >= 2) return { label: "Средний", score };
+            return { label: "Низкий", score };
+        }
+
+        function statusBadgeClass(status) {
+            if (status === "В работе") return "status-work";
+            if (status === "Тестирование") return "status-test";
+            if (status === "Выполнено") return "status-done";
+            return "status-pause";
+        }
+
+        function priorityBadgeClass(priority) {
+            if (priority === "Критично") return "priority-critical";
+            if (priority === "Высокий") return "priority-high";
+            if (priority === "Средний") return "priority-medium";
+            return "priority-low";
+        }
+
+        function groupBy(items, selector) {
+            return items.reduce((accumulator, item) => {
+                const key = selector(item);
+                accumulator[key] = (accumulator[key] || 0) + 1;
+                return accumulator;
             }, {});
         }
 
-        function parseSource(html) {
-            const parser = new DOMParser();
-            const documentNode = parser.parseFromString(html, "text/html");
-            const rows = Array.from(documentNode.querySelectorAll("tbody tr"));
-            const rawTasks = rows
-                .map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.textContent.trim()))
-                .filter((cells) => cells.length >= 6)
-                .map((cells) => ({
-                    title: cells[0] || "Без названия",
-                    lastActivityRaw: cells[1] || "",
-                    deadline: cells[2] || "",
-                    author: cells[3] || "Не указан",
-                    assignee: cells[4] || "Не назначен",
-                    project: cells[5] || "Без проекта",
-                    tags: splitTags(cells[6] || "")
-                }));
+        function isFileProtocol() {
+            return window.location.protocol === "file:";
+        }
+
+        function buildLoadErrorMessage(error) {
+            if (isFileProtocol()) {
+                return "Страница открыта как локальный файл file://. Для fetch из Google Sheets откройте дашборд через GitHub Pages или локальный сервер http://localhost.";
+            }
+
+            return error?.message || "Неизвестная ошибка загрузки";
+        }
+
         function pickField(record, candidates) {
             for (const candidate of candidates) {
                 const value = record[candidate];
@@ -59,6 +878,31 @@
             const latestActivity = rawTasks.reduce((max, task) => {
                 const date = parseDate(task.lastActivityRaw);
                 if (!date) return max;
+                return !max || date > max ? date : max;
+            }, null);
+
+            return rawTasks
+                .map((task) => {
+                    const lastActivity = parseDate(task.lastActivityRaw);
+                    const status = determineStatus(task.tags);
+                    const priority = buildPriority({ ...task, status, lastActivity }, latestActivity);
+                    const infrastructure = deriveInfrastructure(task.tags, task.project);
+
+                    return {
+                        ...task,
+                        lastActivity,
+                        status,
+                        priority: priority.label,
+                        priorityScore: priority.score,
+                        type: deriveType(task.tags, task.project),
+                        infrastructure,
+                        projectShort: normalizeProject(task.project)
+                    };
+                })
+                .sort((left, right) => {
+                    const scoreDiff = right.priorityScore - left.priorityScore;
+                    if (scoreDiff !== 0) return scoreDiff;
+                    return (right.lastActivity?.getTime() || 0) - (left.lastActivity?.getTime() || 0);
                 });
         }
 
@@ -131,24 +975,321 @@
         function renderKpis(tasks) {
             const completed = tasks.filter((task) => task.status === "Выполнено").length;
             const active = tasks.filter((task) => task.status === "В работе" || task.status === "Тестирование").length;
+            const critical = tasks.filter((task) => task.priority === "Критично" || task.priority === "Высокий").length;
+            const backlog = tasks.filter((task) => task.status === "Пауза").length;
+
+            const cards = [
+                {
+                    label: "Всего задач",
+                    value: tasks.length,
+                    note: "Весь экспортированный портфель",
+                    color: "var(--blue)"
+                },
+                {
+                    label: "Активные",
+                    value: active,
+                    note: "В работе и на тестировании",
+                    color: "var(--green)"
+                },
+                {
+                    label: "Нужно внимание",
+                    value: critical,
+                    note: "Высокий и критичный приоритет",
+                    color: "var(--red)"
+                },
+                {
+                    label: "Выполнено",
+                    value: completed,
+                    note: backlog ? `На паузе сейчас ${backlog}` : "Без отложенных задач",
+                    color: "var(--amber)"
+                }
+            ];
+
+            const html = cards.map((card) => `
+                <article class="panel kpi-card">
+                    <div class="panel-body">
+                        <div class="kpi-topline" style="color:${card.color}">
+                            <span>${escapeHtml(card.label)}</span>
+                            <span class="kpi-dot"></span>
+                        </div>
+                        <div class="kpi-value">${card.value}</div>
+                        <div class="kpi-note">${escapeHtml(card.note)}</div>
+                    </div>
+                </article>
+            `).join("");
+
+            document.getElementById("kpi-grid").innerHTML = html;
+            document.getElementById("active-count").textContent = `${active} активных`;
+        }
+
+        function renderAttention(tasks) {
+            const attentionTasks = tasks
+                .filter((task) => task.status !== "Выполнено")
+                .slice(0, 6);
+
+            document.getElementById("attention-count").textContent = `${attentionTasks.length} задач`;
+
+            if (!attentionTasks.length) {
+                document.getElementById("attention-list").innerHTML = `
+                    <div class="center-state">Нет задач, требующих отдельного внимания.</div>
+                `;
+                return;
+            }
+
+            document.getElementById("attention-list").innerHTML = attentionTasks.map((task) => {
+                const accent = PRIORITY_COLORS[task.priority] || STATUS_COLORS[task.status] || "#4e79e8";
+
+                return `
+                    <article class="attention-item" style="--accent:${accent}">
+                        <div class="attention-head">
+                            <div>
+                                <h3 class="attention-title">${escapeHtml(task.title)}</h3>
+                            </div>
+                            <span class="badge ${priorityBadgeClass(task.priority)}">${escapeHtml(task.priority)}</span>
+                        </div>
+                        <div class="badges">
+                            <span class="badge ${statusBadgeClass(task.status)}">${escapeHtml(task.status)}</span>
+                            <span class="soft-tag">${escapeHtml(task.type)}</span>
+                            ${task.infrastructure.map((entry) => `<span class="soft-tag">${escapeHtml(entry)}</span>`).join("")}
+                        </div>
+                        <div class="attention-meta">
+                            <span>Ответственный: <strong>${escapeHtml(task.assignee)}</strong></span>
+                            <span>Постановщик: <strong>${escapeHtml(task.author)}</strong></span>
+                            <span>Активность: <strong>${escapeHtml(formatDate(task.lastActivity))}</strong></span>
+                        </div>
+                    </article>
+                `;
+            }).join("");
+        }
+
+        function upsertChart(key, canvasId, config) {
+            if (state.charts[key]) {
+                state.charts[key].destroy();
+            }
+
+            const canvas = document.getElementById(canvasId);
+            state.charts[key] = new Chart(canvas, config);
+        }
+
+        function renderCharts(tasks) {
+            const statusCounts = groupBy(tasks, (task) => task.status);
+            const priorityCounts = groupBy(tasks, (task) => task.priority);
+            const workloadCounts = groupBy(
+                tasks.filter((task) => task.status !== "Выполнено"),
+                (task) => task.assignee
+            );
+
+            const workload = Object.entries(workloadCounts)
+                .sort((left, right) => right[1] - left[1])
+                .slice(0, 8);
+
+            upsertChart("status", "status-chart", {
+                type: "doughnut",
+                data: {
+                    labels: STATUS_ORDER.slice(1),
+                    datasets: [{
+                        data: STATUS_ORDER.slice(1).map((status) => statusCounts[status] || 0),
+                        backgroundColor: STATUS_ORDER.slice(1).map((status) => STATUS_COLORS[status]),
+                        borderWidth: 0,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: "62%",
+                    plugins: {
+                        legend: {
+                            position: "right",
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 10,
+                                color: "#4d617c",
+                                font: {
+                                    family: "IBM Plex Sans",
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            upsertChart("priority", "priority-chart", {
+                type: "bar",
+                data: {
+                    labels: PRIORITY_ORDER,
+                    datasets: [{
+                        data: PRIORITY_ORDER.map((priority) => priorityCounts[priority] || 0),
+                        backgroundColor: PRIORITY_ORDER.map((priority) => PRIORITY_COLORS[priority]),
+                        borderRadius: 14,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: "#62758c",
+                                font: { family: "IBM Plex Sans", size: 12 }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                                color: "#7d8da2",
+                                font: { family: "IBM Plex Sans", size: 12 }
+                            },
+                            grid: {
+                                color: "rgba(130, 155, 193, 0.14)"
+                            }
+                        }
+                    }
+                }
+            });
+
+            upsertChart("responsible", "responsible-chart", {
+                type: "bar",
+                data: {
+                    labels: workload.map(([name]) => name),
+                    datasets: [{
+                        label: "Задачи",
+                        data: workload.map(([, count]) => count),
+                        backgroundColor: "#4e79e8",
+                        borderRadius: 14,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    indexAxis: "y",
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                                color: "#7d8da2",
+                                font: { family: "IBM Plex Sans", size: 12 }
+                            },
+                            grid: {
+                                color: "rgba(130, 155, 193, 0.14)"
+                            }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: {
+                                color: "#62758c",
+                                font: { family: "IBM Plex Sans", size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderFilterPills(tasks) {
+            const counts = groupBy(tasks, (task) => task.status);
+            document.getElementById("filter-pills").innerHTML = STATUS_ORDER.map((status) => {
+                const count = status === "Все" ? tasks.length : (counts[status] || 0);
+                const activeClass = state.currentFilter === status ? "active" : "";
+                return `
+                    <button class="filter-button ${activeClass}" type="button" data-filter="${escapeHtml(status)}">
+                        ${escapeHtml(status)} <span class="muted">(${count})</span>
+                    </button>
+                `;
+            }).join("");
+
+            Array.from(document.querySelectorAll("[data-filter]")).forEach((button) => {
+                button.addEventListener("click", () => {
+                    state.currentFilter = button.dataset.filter;
+                    applyFilters();
+                });
+            });
+        }
+
+        function renderTable(tasks) {
+            document.getElementById("table-count").textContent = `${tasks.length} строк`;
+
+            if (!tasks.length) {
+                document.getElementById("table-body").innerHTML = `
+                    <tr>
+                        <td colspan="7">
+                            <div class="center-state">По текущему фильтру задач не найдено.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            document.getElementById("table-body").innerHTML = tasks.map((task) => `
+                <tr>
+                    <td>
+                        <div class="cell-stack">
+                            <div class="task-title">${escapeHtml(task.title)}</div>
+                            <div class="task-subline">Проект: ${escapeHtml(task.projectShort)} • Постановщик: ${escapeHtml(task.author)}</div>
+                        </div>
+                    </td>
+                    <td>${escapeHtml(task.type)}</td>
+                    <td>
+                        <div class="cell-stack">
+                            <strong>${escapeHtml(task.assignee)}</strong>
+                            <span class="muted">${escapeHtml(task.projectShort)}</span>
+                        </div>
+                    </td>
+                    <td><span class="badge ${statusBadgeClass(task.status)}">${escapeHtml(task.status)}</span></td>
+                    <td><span class="badge ${priorityBadgeClass(task.priority)}">${escapeHtml(task.priority)}</span></td>
+                    <td>${task.infrastructure.map((entry) => `<span class="soft-tag">${escapeHtml(entry)}</span>`).join("")}</td>
+                    <td class="muted">${escapeHtml(formatDate(task.lastActivity))}</td>
+                </tr>
+            `).join("");
+        }
+
+        function applyFilters() {
+            const searchValue = state.search.trim().toLowerCase();
+            state.filteredTasks = state.tasks.filter((task) => {
+                const matchesStatus = state.currentFilter === "Все" || task.status === state.currentFilter;
+                const haystack = [
+                    task.title,
+                    task.assignee,
+                    task.author,
+                    task.project,
+                    task.priority,
+                    task.status,
+                    task.type,
+                    ...task.tags,
+                    ...task.infrastructure
+                ].join(" ").toLowerCase();
+                const matchesSearch = !searchValue || haystack.includes(searchValue);
+                return matchesStatus && matchesSearch;
+            });
+
+            renderFilterPills(state.tasks);
+            renderTable(state.filteredTasks);
+        }
+
+        async function fetchData() {
+            const attentionList = document.getElementById("attention-list");
+            const tableBody = document.getElementById("table-body");
+            attentionList.innerHTML = `<div class="center-state loading">Обновляю приоритетные карточки...</div>`;
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="7">
-                        <div class="center-state loading">Перечитываю экспорт и обновляю таблицу...</div>
                         <div class="center-state loading">Подтягиваю данные из Google Sheets и обновляю таблицу...</div>
                     </td>
                 </tr>
             `;
 
             try {
-                const response = await fetch(DATA_SOURCE, { cache: "no-store" });
-                if (!response.ok) {
-                    throw new Error(`Источник не открылся: ${response.status}`);
-                }
                 let sourceLabel = "Google Sheets";
 
-                const html = await response.text();
-                state.tasks = parseSource(html);
                 try {
                     const csvText = await loadText(DATA_SOURCES.primaryCsv);
                     state.tasks = parseCsvSource(csvText);
@@ -160,6 +1301,11 @@
                 const latestActivity = state.tasks.reduce((latest, task) => {
                     if (!task.lastActivity) {
                         return latest;
+                    }
+
+                    return !latest || task.lastActivity > latest ? task.lastActivity : latest;
+                }, null);
+                const responsibleCount = new Set(state.tasks.map((task) => task.assignee)).size;
 
                 document.getElementById("last-update").textContent = formatDate(latestActivity);
                 document.getElementById("responsible-count").textContent = responsibleCount;
@@ -170,14 +1316,25 @@
                 renderCharts(state.tasks);
                 applyFilters();
             } catch (error) {
-                attentionList.innerHTML = `<div class="center-state">Не удалось прочитать файл задач.<br>${escapeHtml(error.message)}</div>`;
                 document.getElementById("source-label").textContent = "Источник недоступен";
-                attentionList.innerHTML = `<div class="center-state">Не удалось загрузить задачи из Google Sheets и fallback-файла.<br>${escapeHtml(error.message)}</div>`;
+                attentionList.innerHTML = `<div class="center-state">Не удалось загрузить задачи из Google Sheets и fallback-файла.<br>${escapeHtml(buildLoadErrorMessage(error))}</div>`;
                 tableBody.innerHTML = `
                     <tr>
                         <td colspan="7">
-                            <div class="center-state">Проверьте, что рядом со страницей лежит файл <strong>tasks_2026-04-20_17_26_02.xls</strong>.</div>
-                            <div class="center-state">Проверьте публикацию CSV в Google Sheets и наличие рядом файла <strong>tasks_2026-04-20_17_26_02.xls</strong>.</div>
+                            <div class="center-state">Для локальной проверки запустите страницу через сервер, например <strong>python3 -m http.server 8080</strong>, и откройте <strong>http://localhost:8080</strong>.</div>
                         </td>
                     </tr>
                 `;
+            }
+        }
+
+        document.getElementById("refresh-button").addEventListener("click", fetchData);
+        document.getElementById("search-input").addEventListener("input", (event) => {
+            state.search = event.target.value;
+            applyFilters();
+        });
+
+        fetchData();
+    </script>
+</body>
+</html>
