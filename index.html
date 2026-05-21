@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Дашборд задач PMO</title>
+    <title>Дашборд задач IT-директора</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -390,6 +390,29 @@
             margin-bottom: 18px;
         }
 
+        .table-controls {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-cluster {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .filter-label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
         .filter-pills {
             display: flex;
             flex-wrap: wrap;
@@ -541,6 +564,14 @@
                 align-items: stretch;
             }
 
+            .table-controls {
+                justify-content: stretch;
+            }
+
+            .filter-cluster {
+                align-items: stretch;
+            }
+
             .kpi-grid {
                 grid-template-columns: 1fr;
             }
@@ -564,7 +595,7 @@
         <section class="hero">
             <div class="hero-copy">
                 <div class="eyebrow">Executive IT View</div>
-                <h1>Дашборд задач PMO</h1>
+                <h1>Дашборд задач IT-директора</h1>
                 <div class="hero-meta">
                     <span>Источник: <strong id="source-label">Google Sheets</strong></span>
                     <span>Обновлено: <strong id="last-update">загрузка...</strong></span>
@@ -652,7 +683,13 @@
 
                 <div class="table-toolbar">
                     <div class="filter-pills" id="filter-pills"></div>
-                    <input class="search-input" id="search-input" type="search" placeholder="Поиск по задаче, проекту, исполнителю или тегам">
+                    <div class="table-controls">
+                        <div class="filter-cluster">
+                            <div class="filter-label">От кого</div>
+                            <div class="filter-pills" id="source-filter-pills"></div>
+                        </div>
+                        <input class="search-input" id="search-input" type="search" placeholder="Поиск по задаче, проекту, исполнителю или тегам">
+                    </div>
                 </div>
 
                 <div class="table-wrapper">
@@ -664,13 +701,14 @@
                                 <th>Ответственный</th>
                                 <th>Статус</th>
                                 <th>Приоритет</th>
+                                <th>От кого</th>
                                 <th>Инфраструктура</th>
                                 <th>Последняя активность</th>
                             </tr>
                         </thead>
                         <tbody id="table-body">
                             <tr>
-                                <td colspan="7">
+                                <td colspan="8">
                                     <div class="center-state loading">Загружаю источник и строю таблицу...</div>
                                 </td>
                             </tr>
@@ -705,6 +743,7 @@
             tasks: [],
             filteredTasks: [],
             currentFilter: "Все",
+            currentSource: "Все",
             search: "",
             charts: {}
         };
@@ -764,7 +803,10 @@
         function deriveType(tags, project) {
             const cleanTags = tags.filter((tag) => {
                 const normalized = tag.toLowerCase();
-                return !normalized.includes("готово") && !normalized.includes("тест") && !normalized.includes("в работе");
+                return !normalized.includes("готово")
+                    && !normalized.includes("тест")
+                    && !normalized.includes("в работе")
+                    && !normalized.startsWith("от ");
             });
 
             return cleanTags[0] || normalizeProject(project);
@@ -773,7 +815,10 @@
         function deriveInfrastructure(tags, project) {
             const cleanTags = tags.filter((tag) => {
                 const normalized = tag.toLowerCase();
-                return !normalized.includes("готово") && !normalized.includes("тест") && !normalized.includes("в работе");
+                return !normalized.includes("готово")
+                    && !normalized.includes("тест")
+                    && !normalized.includes("в работе")
+                    && !normalized.startsWith("от ");
             });
 
             if (cleanTags.length >= 2) {
@@ -785,6 +830,15 @@
             }
 
             return [normalizeProject(project)];
+        }
+
+        function deriveSourceTag(tags = []) {
+            const sourceTag = tags.find((tag) => tag.toLowerCase().startsWith("от "));
+            if (!sourceTag) {
+                return "Без источника";
+            }
+
+            return sourceTag.replace(/^от\s+/i, "").trim() || "Без источника";
         }
 
         function buildPriority(task, latestActivity) {
@@ -895,6 +949,7 @@
                         priority: priority.label,
                         priorityScore: priority.score,
                         type: deriveType(task.tags, task.project),
+                        sourceTag: deriveSourceTag(task.tags),
                         infrastructure,
                         projectShort: normalizeProject(task.project)
                     };
@@ -1215,13 +1270,40 @@
             });
         }
 
+        function renderSourceFilter(tasks) {
+            const sourceFilter = document.getElementById("source-filter-pills");
+            const sources = Array.from(new Set(tasks.map((task) => task.sourceTag)))
+                .sort((left, right) => left.localeCompare(right, "ru"));
+            const sourceCounts = groupBy(tasks, (task) => task.sourceTag);
+
+            if (!sources.includes(state.currentSource)) {
+                state.currentSource = "Все";
+            }
+
+            sourceFilter.innerHTML = [
+                `<button class="filter-button ${state.currentSource === "Все" ? "active" : ""}" type="button" data-source-filter="Все">Все <span class="muted">(${tasks.length})</span></button>`,
+                ...sources.map((source) => `
+                    <button class="filter-button ${state.currentSource === source ? "active" : ""}" type="button" data-source-filter="${escapeHtml(source)}">
+                        ${escapeHtml(source)} <span class="muted">(${sourceCounts[source] || 0})</span>
+                    </button>
+                `)
+            ].join("");
+
+            Array.from(document.querySelectorAll("[data-source-filter]")).forEach((button) => {
+                button.addEventListener("click", () => {
+                    state.currentSource = button.dataset.sourceFilter;
+                    applyFilters();
+                });
+            });
+        }
+
         function renderTable(tasks) {
             document.getElementById("table-count").textContent = `${tasks.length} строк`;
 
             if (!tasks.length) {
                 document.getElementById("table-body").innerHTML = `
                     <tr>
-                        <td colspan="7">
+                        <td colspan="8">
                             <div class="center-state">По текущему фильтру задач не найдено.</div>
                         </td>
                     </tr>
@@ -1246,6 +1328,7 @@
                     </td>
                     <td><span class="badge ${statusBadgeClass(task.status)}">${escapeHtml(task.status)}</span></td>
                     <td><span class="badge ${priorityBadgeClass(task.priority)}">${escapeHtml(task.priority)}</span></td>
+                    <td><span class="soft-tag">${escapeHtml(task.sourceTag)}</span></td>
                     <td>${task.infrastructure.map((entry) => `<span class="soft-tag">${escapeHtml(entry)}</span>`).join("")}</td>
                     <td class="muted">${escapeHtml(formatDate(task.lastActivity))}</td>
                 </tr>
@@ -1256,6 +1339,7 @@
             const searchValue = state.search.trim().toLowerCase();
             state.filteredTasks = state.tasks.filter((task) => {
                 const matchesStatus = state.currentFilter === "Все" || task.status === state.currentFilter;
+                const matchesSource = state.currentSource === "Все" || task.sourceTag === state.currentSource;
                 const haystack = [
                     task.title,
                     task.assignee,
@@ -1264,14 +1348,16 @@
                     task.priority,
                     task.status,
                     task.type,
+                    task.sourceTag,
                     ...task.tags,
                     ...task.infrastructure
                 ].join(" ").toLowerCase();
                 const matchesSearch = !searchValue || haystack.includes(searchValue);
-                return matchesStatus && matchesSearch;
+                return matchesStatus && matchesSource && matchesSearch;
             });
 
             renderFilterPills(state.tasks);
+            renderSourceFilter(state.tasks);
             renderTable(state.filteredTasks);
         }
 
@@ -1281,7 +1367,7 @@
             attentionList.innerHTML = `<div class="center-state loading">Обновляю приоритетные карточки...</div>`;
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="7">
+                    <td colspan="8">
                         <div class="center-state loading">Подтягиваю данные из Google Sheets и обновляю таблицу...</div>
                     </td>
                 </tr>
@@ -1320,7 +1406,7 @@
                 attentionList.innerHTML = `<div class="center-state">Не удалось загрузить задачи из Google Sheets и fallback-файла.<br>${escapeHtml(buildLoadErrorMessage(error))}</div>`;
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="7">
+                        <td colspan="8">
                             <div class="center-state">Для локальной проверки запустите страницу через сервер, например <strong>python3 -m http.server 8080</strong>, и откройте <strong>http://localhost:8080</strong>.</div>
                         </td>
                     </tr>
@@ -1333,7 +1419,6 @@
             state.search = event.target.value;
             applyFilters();
         });
-
         fetchData();
     </script>
 </body>
