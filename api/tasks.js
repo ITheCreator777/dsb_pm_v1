@@ -59,7 +59,6 @@ module.exports = async function handler(req, res) {
                 // Добавляем фильтр по нашим группам
                 "GROUP_ID": scrumGroupIds,
                 // Добавляем условие: активные статусы (чтобы не тянуть завершенные за годы)
-                "STATUS": ["1","2","3","4"]
             },
             params: {
                 "NAV_PARAMS": { "nPageSize": 100 }
