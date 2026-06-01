@@ -1172,10 +1172,13 @@
                     const priority = buildPriority({ ...task, status, lastActivity }, latestActivity);
                     const infrastructure = deriveInfrastructure(task.tags, task.project);
 
-                    return {
+                     return {
                         ...task,
                         id: task.id || "",
                         description: task.description || "",
+                        // Добавь эту строку:
+                        groupId: task.groupId || 0, 
+                        
                         rawStatus: task.rawStatus || "",
                         checklistText: task.checklistText || "",
                         lastActivity,
