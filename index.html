@@ -1757,53 +1757,52 @@
             renderTable(state.filteredTasks);
         }
 
-        async function fetchData() {
+    async function fetchData() {
             const attentionList = document.getElementById("attention-list");
             const tableBody = document.getElementById("table-body");
             attentionList.innerHTML = `<div class="center-state loading">Обновляю приоритетные карточки...</div>`;
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="8">
-                        <div class="center-state loading">Подтягиваю данные из Google Sheets и обновляю таблицу...</div>
+                        <div class="center-state loading">Подтягиваю данные из Bitrix24...</div>
                     </td>
                 </tr>
             `;
 
             try {
-                let sourceLabel = "Google Sheets";
+                // Делаем прямой запрос к нашему новому API на Vercel
+                const response = await fetch('/api/tasks');
+                const rawData = await response.json();
 
-                try {
-                    const csvText = await loadText(DATA_SOURCES.primaryCsv);
-                    state.tasks = parseCsvSource(csvText);
-                } catch (primaryError) {
-                    const html = await loadText(DATA_SOURCES.fallbackHtml);
-                    state.tasks = parseHtmlSource(html);
-                    sourceLabel = "Локальный fallback";
+                if (!response.ok) {
+                    throw new Error(rawData.error || "Неизвестная ошибка API");
                 }
-                const latestActivity = state.tasks.reduce((latest, task) => {
-                    if (!task.lastActivity) {
-                        return latest;
-                    }
 
+                // rawData уже содержит массив объектов, подготовленных в tasks.js
+                // Пропускаем их через твою функцию сборки моделей (приоритеты, теги и т.д.)
+                state.tasks = buildTaskModels(rawData);
+                
+                const latestActivity = state.tasks.reduce((latest, task) => {
+                    if (!task.lastActivity) return latest;
                     return !latest || task.lastActivity > latest ? task.lastActivity : latest;
                 }, null);
                 const responsibleCount = new Set(state.tasks.map((task) => task.assignee)).size;
 
                 document.getElementById("last-update").textContent = formatDate(latestActivity);
                 document.getElementById("responsible-count").textContent = responsibleCount;
-                document.getElementById("source-label").textContent = sourceLabel;
+                document.getElementById("source-label").textContent = "Bitrix24 API"; // Обновили лейбл!
 
                 renderKpis(state.tasks);
                 renderAttention(state.tasks);
                 renderCharts(state.tasks);
                 applyFilters();
             } catch (error) {
-                document.getElementById("source-label").textContent = "Источник недоступен";
-                attentionList.innerHTML = `<div class="center-state">Не удалось загрузить задачи из Google Sheets и fallback-файла.<br>${escapeHtml(buildLoadErrorMessage(error))}</div>`;
+                document.getElementById("source-label").textContent = "Bitrix24 недоступен";
+                attentionList.innerHTML = `<div class="center-state">Не удалось загрузить задачи из API.<br>${escapeHtml(error.message)}</div>`;
                 tableBody.innerHTML = `
                     <tr>
                         <td colspan="8">
-                            <div class="center-state">Для локальной проверки запустите страницу через сервер, например <strong>python3 -m http.server 8080</strong>, и откройте <strong>http://localhost:8080</strong>.</div>
+                            <div class="center-state">Убедитесь, что вебхук BITRIX_WEBHOOK_URL настроен в Vercel и деплой обновлен.</div>
                         </td>
                     </tr>
                 `;
