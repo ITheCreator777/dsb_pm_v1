@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
             ],
             filter: {
                 // Показываем только незавершенные задачи, чтобы дашборд оставался сфокусированным
-                "<=STATUS": "4" 
+                 "STATUS": ["1","2","3","4"]
             },
             params: {
                 "NAV_PARAMS": { "nPageSize": 100 } // Тянем до 100 активных задач
