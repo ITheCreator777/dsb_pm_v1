@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Дашборд задач PMO </title>
+    <title>Дашборд задач IT-директора</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -44,6 +44,10 @@
                 linear-gradient(180deg, #f6f9fc 0%, var(--bg) 100%);
             color: var(--text);
             font-family: "IBM Plex Sans", sans-serif;
+        }
+
+        body.modal-open {
+            overflow: hidden;
         }
 
         .dashboard {
@@ -489,6 +493,10 @@
             background: rgba(78, 121, 232, 0.04);
         }
 
+        tbody tr.clickable-row {
+            cursor: pointer;
+        }
+
         .task-title {
             margin: 0 0 8px;
             font-weight: 600;
@@ -530,6 +538,146 @@
             color: var(--muted);
             text-align: center;
             padding: 24px;
+        }
+
+        .task-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            align-items: stretch;
+            justify-content: flex-end;
+            background: rgba(17, 27, 42, 0.32);
+            backdrop-filter: blur(10px);
+        }
+
+        .task-modal.open {
+            display: flex;
+        }
+
+        .task-modal-panel {
+            width: min(760px, 100%);
+            height: 100%;
+            background: rgba(250, 252, 255, 0.98);
+            border-left: 1px solid rgba(130, 155, 193, 0.14);
+            box-shadow: -24px 0 60px rgba(48, 71, 105, 0.18);
+            overflow-y: auto;
+        }
+
+        .task-modal-header {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 22px 24px 18px;
+            background: rgba(250, 252, 255, 0.94);
+            border-bottom: 1px solid rgba(130, 155, 193, 0.14);
+            backdrop-filter: blur(10px);
+        }
+
+        .task-modal-title {
+            margin: 0;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 26px;
+            line-height: 1.15;
+            letter-spacing: -0.03em;
+        }
+
+        .task-modal-subtitle {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .task-modal-close {
+            appearance: none;
+            border: 1px solid rgba(130, 155, 193, 0.16);
+            background: rgba(255, 255, 255, 0.86);
+            border-radius: 14px;
+            padding: 10px 12px;
+            font: inherit;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .task-modal-body {
+            padding: 24px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .detail-card {
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid rgba(130, 155, 193, 0.12);
+            border-radius: 18px;
+            padding: 16px;
+        }
+
+        .detail-card.full {
+            grid-column: 1 / -1;
+        }
+
+        .detail-label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .detail-value {
+            font-size: 15px;
+            line-height: 1.55;
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .detail-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .detail-list-item {
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(78, 121, 232, 0.05);
+        }
+
+        .detail-list-item.completed {
+            background: rgba(53, 184, 143, 0.09);
+        }
+
+        .detail-list-item.system {
+            background: rgba(155, 172, 193, 0.12);
+        }
+
+        .detail-message-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .detail-message-head strong {
+            color: var(--text);
+        }
+
+        .detail-empty {
+            color: var(--muted);
+            font-size: 14px;
         }
 
         .loading {
@@ -587,6 +735,14 @@
             .search-input {
                 width: 100%;
             }
+
+            .task-modal-panel {
+                width: 100%;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -595,7 +751,7 @@
         <section class="hero">
             <div class="hero-copy">
                 <div class="eyebrow">Executive IT View</div>
-                <h1>Дашборд задач PMO</h1>
+                <h1>Дашборд задач IT-директора</h1>
                 <div class="hero-meta">
                     <span>Источник: <strong id="source-label">Google Sheets</strong></span>
                     <span>Обновлено: <strong id="last-update">загрузка...</strong></span>
@@ -719,6 +875,21 @@
         </section>
     </main>
 
+    <div class="task-modal" id="task-modal" aria-hidden="true">
+        <div class="task-modal-panel" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+            <div class="task-modal-header">
+                <div>
+                    <h2 class="task-modal-title" id="task-modal-title">Загрузка задачи...</h2>
+                    <p class="task-modal-subtitle" id="task-modal-subtitle">Подтягиваем полный контекст из Bitrix24.</p>
+                </div>
+                <button class="task-modal-close" type="button" id="task-modal-close">Закрыть</button>
+            </div>
+            <div class="task-modal-body" id="task-modal-body">
+                <div class="center-state loading">Загружаю детали задачи...</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const DATA_SOURCES = {
             primaryCsv: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkWl7Whkp0ae00GwDZDkABz6HYDvgwen0zmFa7814DHlvJppZHWv8Jya586vhp1UWXfBgPfWDD2zun/pub?gid=0&single=true&output=csv",
@@ -745,7 +916,9 @@
             currentFilter: "Все",
             currentSource: "Все",
             search: "",
-            charts: {}
+            charts: {},
+            taskDetailsCache: {},
+            activeTaskId: null
         };
 
         function escapeHtml(value = "") {
@@ -755,6 +928,17 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#39;");
+        }
+
+        function htmlToPlainText(value = "") {
+            if (!value) return "";
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(String(value), "text/html");
+            return (doc.body.textContent || "").replace(/\u00A0/g, " ").trim();
+        }
+
+        function formatRichText(value = "") {
+            return escapeHtml(htmlToPlainText(value)).replace(/\n/g, "<br>");
         }
 
         function splitTags(raw = "") {
@@ -786,6 +970,20 @@
 
             const [, day, month, year, hours = "00", minutes = "00", seconds = "00"] = match;
             return new Date(Number(year), Number(month) - 1, Number(day), Number(hours), Number(minutes), Number(seconds));
+        }
+
+        function formatApiDate(value = "") {
+            if (!value) return "";
+
+            const asLocal = parseDate(value);
+            if (asLocal) return formatDate(asLocal);
+
+            const asIso = new Date(String(value));
+            if (!Number.isNaN(asIso.getTime())) {
+                return formatDate(asIso);
+            }
+
+            return String(value);
         }
 
         function normalizeProject(project = "") {
@@ -839,6 +1037,19 @@
             }
 
             return sourceTag.replace(/^от\s+/i, "").trim() || "Без источника";
+        }
+
+        function parseChecklistText(value = "") {
+            return String(value)
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean)
+                .map((line, index) => ({
+                    id: `fallback-${index}`,
+                    title: line.replace(/^[-*]\s*/, ""),
+                    isComplete: line.toLowerCase().includes("готово"),
+                    isImportant: false
+                }));
         }
 
         function buildPriority(task, latestActivity) {
@@ -944,6 +1155,10 @@
 
                     return {
                         ...task,
+                        id: task.id || "",
+                        description: task.description || "",
+                        rawStatus: task.rawStatus || "",
+                        checklistText: task.checklistText || "",
                         lastActivity,
                         status,
                         priority: priority.label,
@@ -977,12 +1192,16 @@
 
             const rawTasks = result.data
                 .map((record) => ({
+                    id: pickField(record, ["ID", "Id", "id", "Task ID", "taskId"]),
                     title: pickField(record, ["Название", "Задача", "Task", "title"]) || "Без названия",
+                    description: pickField(record, ["Описание", "Description", "description"]),
                     lastActivityRaw: pickField(record, ["Последняя активность", "Обновлено", "Last activity", "lastActivity"]),
                     deadline: pickField(record, ["Крайний срок", "Deadline", "deadline"]),
                     author: pickField(record, ["Постановщик", "Автор", "Requester", "author"]) || "Не указан",
                     assignee: pickField(record, ["Исполнитель", "Ответственный", "Assignee", "assignee"]) || "Не назначен",
                     project: pickField(record, ["Проект", "Project", "project"]) || "Без проекта",
+                    rawStatus: pickField(record, ["Статус", "Status", "status"]),
+                    checklistText: pickField(record, ["Чеклист", "Checklist", "checklist"]),
                     tags: splitTags(pickField(record, ["Теги", "Tags", "tags"]))
                 }))
                 .filter((task) => task.title !== "Без названия" || task.assignee !== "Не назначен" || task.project !== "Без проекта");
@@ -1002,12 +1221,16 @@
                 .map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.textContent.trim()))
                 .filter((cells) => cells.length >= 6)
                 .map((cells) => ({
+                    id: cells[7] || "",
                     title: cells[0] || "Без названия",
+                    description: "",
                     lastActivityRaw: cells[1] || "",
                     deadline: cells[2] || "",
                     author: cells[3] || "Не указан",
                     assignee: cells[4] || "Не назначен",
                     project: cells[5] || "Без проекта",
+                    rawStatus: "",
+                    checklistText: "",
                     tags: splitTags(cells[6] || "")
                 }));
 
@@ -1297,6 +1520,173 @@
             });
         }
 
+        function getTaskById(taskId) {
+            return state.tasks.find((task) => String(task.id) === String(taskId)) || null;
+        }
+
+        function getChecklistMarkup(items) {
+            if (!items.length) {
+                return `<div class="detail-empty">Чек-лист не найден.</div>`;
+            }
+
+            const sortedItems = [...items].sort((left, right) => {
+                const leftSort = Number(left.sortIndex || 0);
+                const rightSort = Number(right.sortIndex || 0);
+                return leftSort - rightSort;
+            });
+
+            return `
+                <div class="detail-list">
+                    ${sortedItems.map((item) => `
+                        <div class="detail-list-item ${item.isComplete ? "completed" : ""}">
+                            <strong>${item.isComplete ? "✓" : "•"}</strong> ${escapeHtml(item.title || "Без названия")}
+                        </div>
+                    `).join("")}
+                </div>
+            `;
+        }
+
+        function getMessagesMarkup(messages) {
+            if (!messages.length) {
+                return `<div class="detail-empty">Сообщения чата пока не найдены.</div>`;
+            }
+
+            return `
+                <div class="detail-list">
+                    ${messages.map((message) => `
+                        <div class="detail-list-item ${message.isSystem ? "system" : ""}">
+                            <div class="detail-message-head">
+                                <strong>${escapeHtml(message.authorName || "Система")}</strong>
+                                <span class="muted">${escapeHtml(formatApiDate(message.date))}</span>
+                            </div>
+                            <div class="detail-value">${formatRichText(message.text || "Без текста")}</div>
+                            ${message.files?.length ? `
+                                <div class="badges" style="margin-top:10px;">
+                                    ${message.files.map((file) => `<span class="soft-tag">${escapeHtml(file.name)}</span>`).join("")}
+                                </div>
+                            ` : ""}
+                        </div>
+                    `).join("")}
+                </div>
+            `;
+        }
+
+        function renderTaskModal(task, detailsState = {}) {
+            const taskModal = document.getElementById("task-modal");
+            const titleNode = document.getElementById("task-modal-title");
+            const subtitleNode = document.getElementById("task-modal-subtitle");
+            const bodyNode = document.getElementById("task-modal-body");
+            const details = detailsState.data || null;
+            const taskInfo = details?.task || {};
+            const checklist = details?.checklist?.length ? details.checklist : parseChecklistText(task.checklistText);
+            const messages = details?.chat?.messages || [];
+
+            titleNode.textContent = detailsState.loading ? (task.title || "Загрузка задачи...") : (taskInfo.title || task.title || "Задача");
+            subtitleNode.textContent = detailsState.loading
+                ? "Подтягиваем полный контекст из Bitrix24."
+                : task.id
+                    ? `Задача Bitrix #${task.id}${detailsState.error ? " • данные частично недоступны" : ""}`
+                    : "Задача без ID Bitrix, показаны только данные из выгрузки.";
+
+            bodyNode.innerHTML = `
+                ${detailsState.error ? `<div class="detail-card full"><div class="detail-label">Предупреждение</div><div class="detail-value">${escapeHtml(detailsState.error)}</div></div>` : ""}
+                <div class="detail-grid">
+                    <div class="detail-card full">
+                        <div class="detail-label">Описание</div>
+                        <div class="detail-value">${formatRichText(taskInfo.description || task.description || "Описание отсутствует.")}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label">Постановщик</div>
+                        <div class="detail-value">${escapeHtml(taskInfo.creator || task.author || "Не указан")}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label">Исполнитель</div>
+                        <div class="detail-value">${escapeHtml(taskInfo.responsible || task.assignee || "Не назначен")}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label">Статус</div>
+                        <div class="detail-value">${escapeHtml(taskInfo.statusLabel || task.rawStatus || task.status || "Без статуса")}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label">Проект</div>
+                        <div class="detail-value">${escapeHtml(taskInfo.project || task.projectShort || task.project || "Без проекта")}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label">Крайний срок</div>
+                        <div class="detail-value">${escapeHtml(formatApiDate(taskInfo.deadline || task.deadline || "" ) || "Без срока")}</div>
+                    </div>
+                    <div class="detail-card">
+                        <div class="detail-label">Последняя активность</div>
+                        <div class="detail-value">${escapeHtml(formatDate(task.lastActivity) || "Без даты")}</div>
+                    </div>
+                    <div class="detail-card full">
+                        <div class="detail-label">Теги</div>
+                        <div class="detail-value">
+                            ${(taskInfo.tags || task.tags || []).length
+                                ? (taskInfo.tags || task.tags || []).map((tag) => `<span class="soft-tag">${escapeHtml(tag)}</span>`).join("")
+                                : `<span class="detail-empty">Теги не указаны.</span>`}
+                        </div>
+                    </div>
+                    <div class="detail-card full">
+                        <div class="detail-label">Чек-лист</div>
+                        ${getChecklistMarkup(checklist)}
+                    </div>
+                    <div class="detail-card full">
+                        <div class="detail-label">Чат задачи</div>
+                        ${detailsState.loading
+                            ? `<div class="center-state loading" style="min-height:140px;">Загружаю сообщения чата...</div>`
+                            : getMessagesMarkup(messages)}
+                    </div>
+                </div>
+            `;
+
+            taskModal.classList.add("open");
+            taskModal.setAttribute("aria-hidden", "false");
+            document.body.classList.add("modal-open");
+        }
+
+        function closeTaskModal() {
+            document.getElementById("task-modal").classList.remove("open");
+            document.getElementById("task-modal").setAttribute("aria-hidden", "true");
+            document.body.classList.remove("modal-open");
+            state.activeTaskId = null;
+        }
+
+        async function openTaskModal(taskId) {
+            const task = getTaskById(taskId);
+            if (!task) return;
+
+            state.activeTaskId = String(taskId);
+            renderTaskModal(task, { loading: true });
+
+            if (!task.id) {
+                renderTaskModal(task, { loading: false, error: "У задачи нет ID Bitrix в выгрузке, поэтому полные детали из API недоступны." });
+                return;
+            }
+
+            if (state.taskDetailsCache[task.id]) {
+                renderTaskModal(task, { loading: false, data: state.taskDetailsCache[task.id] });
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/task-details?id=${encodeURIComponent(task.id)}`, { cache: "no-store" });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || `Ошибка ${response.status}`);
+                }
+
+                state.taskDetailsCache[task.id] = data;
+                if (state.activeTaskId === String(taskId)) {
+                    renderTaskModal(task, { loading: false, data });
+                }
+            } catch (error) {
+                if (state.activeTaskId === String(taskId)) {
+                    renderTaskModal(task, { loading: false, error: error.message || "Не удалось загрузить детали задачи." });
+                }
+            }
+        }
+
         function renderTable(tasks) {
             document.getElementById("table-count").textContent = `${tasks.length} строк`;
 
@@ -1312,11 +1702,11 @@
             }
 
             document.getElementById("table-body").innerHTML = tasks.map((task) => `
-                <tr>
+                <tr class="${task.id ? "clickable-row" : ""}" ${task.id ? `data-task-row-id="${escapeHtml(task.id)}"` : ""}>
                     <td>
                         <div class="cell-stack">
                             <div class="task-title">${escapeHtml(task.title)}</div>
-                            <div class="task-subline">Проект: ${escapeHtml(task.projectShort)} • Постановщик: ${escapeHtml(task.author)}</div>
+                            <div class="task-subline">Проект: ${escapeHtml(task.projectShort)} • Постановщик: ${escapeHtml(task.author)}${task.id ? ` • Bitrix ID: ${escapeHtml(task.id)}` : ""}</div>
                         </div>
                     </td>
                     <td>${escapeHtml(task.type)}</td>
@@ -1333,6 +1723,12 @@
                     <td class="muted">${escapeHtml(formatDate(task.lastActivity))}</td>
                 </tr>
             `).join("");
+
+            Array.from(document.querySelectorAll("[data-task-row-id]")).forEach((row) => {
+                row.addEventListener("click", () => {
+                    openTaskModal(row.dataset.taskRowId);
+                });
+            });
         }
 
         function applyFilters() {
@@ -1418,6 +1814,17 @@
         document.getElementById("search-input").addEventListener("input", (event) => {
             state.search = event.target.value;
             applyFilters();
+        });
+        document.getElementById("task-modal-close").addEventListener("click", closeTaskModal);
+        document.getElementById("task-modal").addEventListener("click", (event) => {
+            if (event.target.id === "task-modal") {
+                closeTaskModal();
+            }
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && state.activeTaskId) {
+                closeTaskModal();
+            }
         });
         fetchData();
     </script>
