@@ -41,13 +41,14 @@ function normalizeTags(rawTags) {
 module.exports = async function handler(req, res) {
     if (req.method !== "GET") {
         res.statusCode = 405;
-        res.setHeader("Content-Type", "application/json; charset=utf-8");
         res.end(JSON.stringify({ error: "Method not allowed" }));
         return;
     }
 
     try {
-        // Запрашиваем полный набор полей, нужный для твоего дашборда
+        // ID твоих скрам-проектов
+        const scrumGroupIds = [128, 141, 140, 130, 133, 143];
+
         const result = await b24Call("tasks.task.list", {
             select: [
                 "ID", "TITLE", "DESCRIPTION", "STATUS", "GROUP_ID", "GROUP_NAME",
@@ -56,12 +57,12 @@ module.exports = async function handler(req, res) {
             ],
             filter: {
                 // Добавляем фильтр по нашим группам
-                 "GROUP_ID": scrumGroupIds,
-                // Показываем только незавершенные задачи, чтобы дашборд оставался сфокусированным
-                 "STATUS": ["1","2","3","4"]
+                "GROUP_ID": scrumGroupIds,
+                // Добавляем условие: активные статусы (чтобы не тянуть завершенные за годы)
+                "STATUS": ["1","2","3","4"]
             },
             params: {
-                "NAV_PARAMS": { "nPageSize": 100 } // Тянем до 100 активных задач
+                "NAV_PARAMS": { "nPageSize": 100 }
             }
         });
 
