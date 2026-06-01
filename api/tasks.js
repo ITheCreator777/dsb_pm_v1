@@ -88,6 +88,7 @@ module.exports = async function handler(req, res) {
                 deadline: task.deadline || task.DEADLINE || "",
                 author: authorName,
                 assignee: assigneeName,
+                groupId: task.groupId || task.GROUP_ID || 0,
                 // Название проекта/группы из Битрикса
                 project: task.groupName || task.GROUP_NAME || "Без проекта",
                 rawStatus: String(task.status || task.STATUS || "1"),
