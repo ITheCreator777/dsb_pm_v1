@@ -55,6 +55,8 @@ module.exports = async function handler(req, res) {
                 "CREATOR", "RESPONSIBLE"
             ],
             filter: {
+                // Добавляем фильтр по нашим группам
+                 "GROUP_ID": scrumGroupIds,
                 // Показываем только незавершенные задачи, чтобы дашборд оставался сфокусированным
                  "STATUS": ["1","2","3","4"]
             },
