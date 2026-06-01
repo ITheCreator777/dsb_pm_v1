@@ -41,13 +41,14 @@ function normalizeTags(rawTags) {
 module.exports = async function handler(req, res) {
     if (req.method !== "GET") {
         res.statusCode = 405;
-        res.setHeader("Content-Type", "application/json; charset=utf-8");
         res.end(JSON.stringify({ error: "Method not allowed" }));
         return;
     }
 
     try {
-        // Запрашиваем полный набор полей, нужный для твоего дашборда
+        // ID твоих скрам-проектов
+        const scrumGroupIds = [128, 141, 140, 130, 133, 143];
+
         const result = await b24Call("tasks.task.list", {
             select: [
                 "ID", "TITLE", "DESCRIPTION", "STATUS", "GROUP_ID", "GROUP_NAME",
@@ -55,30 +56,27 @@ module.exports = async function handler(req, res) {
                 "CREATOR", "RESPONSIBLE"
             ],
             filter: {
-                // Показываем только незавершенные задачи, чтобы дашборд оставался сфокусированным
-                 "STATUS": ["1","2","3","4"]
+                // Добавляем фильтр по нашим группам
+                "GROUP_ID": scrumGroupIds,
+                // Добавляем условие: активные статусы (чтобы не тянуть завершенные за годы)
+                "<=STATUS": "4" 
             },
             params: {
-                "NAV_PARAMS": { "nPageSize": 100 } // Тянем до 100 активных задач
+                "NAV_PARAMS": { "nPageSize": 100 }
             }
         });
 
         const tasks = result.tasks || (Array.isArray(result) ? result : []);
 
         const formattedTasks = tasks.map(task => {
-            // Собираем имя постановщика (Creator)
+            // ... (оставь код маппинга как был, он у тебя уже рабочий)
             let authorName = `ID: ${task.createdBy || task.CREATED_BY}`;
             const creator = task.creator || task.CREATOR;
-            if (creator && creator.name) {
-                authorName = `${creator.name} ${creator.lastName || ""}`.trim();
-            }
+            if (creator && creator.name) authorName = `${creator.name} ${creator.lastName || ""}`.trim();
 
-            // Собираем имя ответственного (Responsible)
             let assigneeName = `ID: ${task.responsibleId || task.RESPONSIBLE_ID}`;
             const responsible = task.responsible || task.RESPONSIBLE;
-            if (responsible && responsible.name) {
-                assigneeName = `${responsible.name} ${responsible.lastName || ""}`.trim();
-            }
+            if (responsible && responsible.name) assigneeName = `${responsible.name} ${responsible.lastName || ""}`.trim();
 
             return {
                 id: task.id || task.ID,
@@ -88,14 +86,20 @@ module.exports = async function handler(req, res) {
                 deadline: task.deadline || task.DEADLINE || "",
                 author: authorName,
                 assignee: assigneeName,
-                groupId: task.groupId || task.GROUP_ID || 0,
-                // Название проекта/группы из Битрикса
                 project: task.groupName || task.GROUP_NAME || "Без проекта",
                 rawStatus: String(task.status || task.STATUS || "1"),
-                // Жесткая и безопасная нормализация тегов
                 tags: normalizeTags(task.tags || task.TAGS)
             };
         });
+
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify(formattedTasks));
+    } catch (error) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ error: error.message }));
+    }
+};
 
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/json; charset=utf-8");
