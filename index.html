@@ -683,6 +683,12 @@
         .loading {
             animation: pulse 1.2s ease-in-out infinite;
         }
+        /* Добавим стили для новых вкладок */
+        .tabs { margin-bottom: 20px; display: flex; gap: 10px; }
+        
+        .tab-btn { padding: 8px 16px; border: none; background: #e0e7ed; cursor: pointer; border-radius: 6px; font-weight: 600; }
+        
+        .tab-btn.active { background: #4a90e2; color: white; }
 
         @keyframes pulse {
             0%, 100% { opacity: 0.48; }
@@ -760,7 +766,20 @@
             </div>
             <button class="refresh-button" type="button" id="refresh-button">Обновить данные</button>
         </section>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="setTab('all', this)">Все задачи</button>
+            <button class="tab-btn" onclick="setTab('scrum', this)">Скрам</button>
+            <button class="tab-btn" onclick="setTab('other', this)">Остальное</button>
+        </div>
 
+        <section class="panel table-panel">
+            <div class="panel-body">
+                <div class="table-wrapper">
+                    <table id="task-table">
+                        </table>
+                </div>
+            </div>
+        </section>
         <section class="kpi-grid" id="kpi-grid"></section>
 
         <section class="overview-grid">
@@ -1826,6 +1845,40 @@
             }
         });
         fetchData();
+        let state = {
+            tasks: [],
+            search: "",
+            activeTab: "all"
+        };
+
+        const scrumGroupIds = [128, 141, 140, 130, 133, 143];
+
+        function setTab(tabName, el) {
+            state.activeTab = tabName;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            el.classList.add('active');
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const filtered = state.tasks.filter(task => {
+                // 1. Скрываем Руслана Абдыкадырова
+                if (task.assignee.includes("Руслан Абдыкадыров") || task.author.includes("Руслан Абдыкадыров")) return false;
+
+                // 2. Фильтр по поиску
+                const matchesSearch = task.title.toLowerCase().includes(state.search.toLowerCase());
+                
+                // 3. Логика вкладок
+                const isScrum = scrumGroupIds.includes(parseInt(task.groupId));
+                
+                if (state.activeTab === 'scrum') return matchesSearch && isScrum;
+                if (state.activeTab === 'other') return matchesSearch && !isScrum;
+                
+                return matchesSearch;
+            });
+
+            renderTable(filtered);
+        }
     </script>
 </body>
 </html>
