@@ -1754,29 +1754,27 @@
         }
 
         function applyFilters() {
-            const searchValue = state.search.trim().toLowerCase();
-            state.filteredTasks = state.tasks.filter((task) => {
-                const matchesStatus = state.currentFilter === "Все" || task.status === state.currentFilter;
-                const matchesSource = state.currentSource === "Все" || task.sourceTag === state.currentSource;
-                const haystack = [
-                    task.title,
-                    task.assignee,
-                    task.author,
-                    task.project,
-                    task.priority,
-                    task.status,
-                    task.type,
-                    task.sourceTag,
-                    ...task.tags,
-                    ...task.infrastructure
-                ].join(" ").toLowerCase();
-                const matchesSearch = !searchValue || haystack.includes(searchValue);
-                return matchesStatus && matchesSource && matchesSearch;
+            const scrumIds = [128, 141, 140, 130, 133, 143];
+            
+            // 1. Фильтруем массив перед отображением
+            const filtered = state.tasks.filter(task => {
+                // Скрываем задачи Руслана Абдыкадырова (по имени ответственного или автора)
+                const isRuslan = task.assignee.includes("Руслан Абдыкадыров") || task.author.includes("Руслан Абдыкадыров");
+                if (isRuslan) return false;
+        
+                // Фильтр по поиску
+                const matchesSearch = task.title.toLowerCase().includes(state.search.toLowerCase());
+                
+                // Фильтр по вкладкам
+                const isScrum = scrumIds.includes(parseInt(task.groupId)); // Предполагается, что у задачи есть groupId
+                
+                if (state.activeTab === 'scrum') return matchesSearch && isScrum;
+                if (state.activeTab === 'other') return matchesSearch && !isScrum;
+                
+                return matchesSearch; // Вкладка "Все"
             });
-
-            renderFilterPills(state.tasks);
-            renderSourceFilter(state.tasks);
-            renderTable(state.filteredTasks);
+        
+            renderTable(filtered); // Функция, которая рисует строки таблицы
         }
 
     async function fetchData() {
@@ -1848,40 +1846,7 @@
             }
         });
         fetchData();
-        let state = {
-            tasks: [],
-            search: "",
-            activeTab: "all"
-        };
 
-        const scrumGroupIds = [128, 141, 140, 130, 133, 143];
-
-        function setTab(tabName, el) {
-            state.activeTab = tabName;
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            el.classList.add('active');
-            applyFilters();
-        }
-
-        function applyFilters() {
-            const filtered = state.tasks.filter(task => {
-                // 1. Скрываем Руслана Абдыкадырова
-                if (task.assignee.includes("Руслан Абдыкадыров") || task.author.includes("Руслан Абдыкадыров")) return false;
-
-                // 2. Фильтр по поиску
-                const matchesSearch = task.title.toLowerCase().includes(state.search.toLowerCase());
-                
-                // 3. Логика вкладок
-                const isScrum = scrumGroupIds.includes(parseInt(task.groupId));
-                
-                if (state.activeTab === 'scrum') return matchesSearch && isScrum;
-                if (state.activeTab === 'other') return matchesSearch && !isScrum;
-                
-                return matchesSearch;
-            });
-
-            renderTable(filtered);
-        }
     </script>
 </body>
 </html>
